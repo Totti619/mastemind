@@ -12,11 +12,17 @@ import java.sql.*;
 
 class Tirada implements Serializable {
 	private byte[] entrada, malPosicionados, bienPosicionados, numeroAleatorio;
-	private int id; 
+	private int id, idPartida; 
 	
 	public Tirada(byte[] entrada, byte[] numeroAleatorio) {
 		this.entrada = entrada;
 		this.numeroAleatorio = numeroAleatorio;
+	}
+	public Tirada(int id, int idPartida, String entrada, String mp, String bp) throws NumberFormatException {
+		this.id = id; this.idPartida = idPartida;
+		setEntrada(entrada);
+		setMalPosicionados(mp);
+		setBienPosicionados(bp);
 	}
 	
 	public byte[] getEntrada() {
@@ -29,9 +35,19 @@ class Tirada implements Serializable {
 		for (int i = 0; i < (t = getEntrada()).length; i++) res.append(t[i]);
 		return res.toString();
 	}
+	public void setEntrada(String arg) throws NumberFormatException {
+		byte[] t = new byte[5];
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		this.entrada = t;
+	}
 	public byte[] getMalPosicionados() {
 		byte[] t = this.malPosicionados;
 		return t;
+	}
+	public void setMalPosicionados(String arg) throws NumberFormatException {
+		byte[] t = new byte[5];
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		this.malPosicionados = t;
 	}
 	public void crearMalPosicionados() {
 		byte[] entrada = this.entrada;
@@ -52,6 +68,11 @@ class Tirada implements Serializable {
 	public byte[] getBienPosicionados() {
 		byte[] t = this.bienPosicionados;
 		return t;
+	}
+	public void setBienPosicionados(String arg) throws NumberFormatException {
+		byte[] t = new byte[5];
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		this.bienPosicionados = t;
 	}
 	public void crearBienPosicionados() {
 		byte[] entrada = this.entrada;
@@ -141,6 +162,9 @@ class PartidaAvanzada extends Partida implements Serializable {
 		setCantidadVidas((byte)10);
 		setVidas(getCantidadVidas());
 	}
+	public PartidaAvanzada(int id, String numeroAleatorio, String nick, String fecha, byte vidas, boolean partidaAcabada, ArrayList<Tirada> tiradas) throws NumberFormatException {
+		super(id, numeroAleatorio, nick, fecha, vidas, partidaAcabada, tiradas);
+	}
 	
 	public byte getCantidadVidas() {return this.cantidadVidas;}
 	public void setCantidadVidas(byte cantidadVidas) {this.cantidadVidas = cantidadVidas;}
@@ -156,6 +180,9 @@ class PartidaAvanzada extends Partida implements Serializable {
 class PartidaPrincipiante extends Partida implements Serializable {
 	
 	public PartidaPrincipiante() {}
+	public PartidaPrincipiante(int id, String numeroAleatorio, String nick, String fecha, byte vidas, boolean partidaAcabada, ArrayList<Tirada> tiradas) throws NumberFormatException {
+		super(id, numeroAleatorio, nick, fecha, vidas, partidaAcabada, tiradas);
+	}
 	
 	public void setPartidaAcabada() {
 		int bienPosicionados = getUltimaTirada().getCantidadBienPosicionados();
@@ -176,10 +203,21 @@ abstract class Partida implements Serializable {
 	private int id;
 	
 	public Partida() {}
+	public Partida(int id, String numeroAleatorio, String nick, String fecha, byte vidas, boolean partidaAcabada, ArrayList<Tirada> tiradas) throws NumberFormatException {
+		setNumeroAleatorio(numeroAleatorio);
+		tiradas = new ArrayList<Tirada>(tiradas);
+		setPartidaAcabada(partidaAcabada);
+		setNick(nick);
+		setFecha(fecha);
+		setVidas(vidas);
+		setId(id);
+	}
 	
-	public byte[] getNumeroAleatorio() {
-		byte[] t = this.numeroAleatorio;
-		return t;
+	public byte[] getNumeroAleatorio() {return numeroAleatorio;}
+	public void setNumeroAleatorio(String arg) throws NumberFormatException {
+		byte[] t = new byte[5];
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		this.numeroAleatorio = t;
 	}
 	public String getNumeroAleatorioString() {
 		StringBuffer res = new StringBuffer();
@@ -196,9 +234,10 @@ abstract class Partida implements Serializable {
 	protected abstract void setPartidaAcabada();
 	
 	public String getNick() {return this.nick;}
-	public void setNick(String nick) {this.nick = nick;
-		}
+	public void setNick(String nick) {this.nick = nick;}
+	
 	public String getFecha() {return this.fecha;}
+	public void setFecha(String fecha) {this.fecha = fecha;}
 	
 	public byte getVidas() {return this.vidas;}
 	public void setVidas(byte vidas) {this.vidas = vidas;}
@@ -306,9 +345,12 @@ class JocFrame {
 	
 	private JPanel panelPartidas = new JPanel();
 	private JLabel labelPartidasGuardadas = new JLabel("Partidas Guardadas");
+	private JTable tablePartidas;
+	private ListSelectionModel tablePartidasSelectionModel;
 	private JScrollPane scrollTablePartidas;
 
 	private Partida partida;
+	private BD bd = BD.getInstance();
 	
 	public JocFrame() {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
@@ -329,7 +371,11 @@ class JocFrame {
 		panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
 		
 		panelPartidas.setLayout(new BorderLayout());
-		scrollTablePartidas = new JScrollPane(getTablaPartidas());
+		tablePartidas = bd.getTablaPartidas();
+		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
+		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
+		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		scrollTablePartidas = new JScrollPane(tablePartidas);
 		panelPartidas.add(scrollTablePartidas, BorderLayout.CENTER);
 		
 		Box boxPartida = Box.createHorizontalBox();
@@ -354,79 +400,31 @@ class JocFrame {
 		frame.setVisible(true);
 	}
 	
-	Partida getPartida() {
+	private Partida getPartida() {
 		return this.partida;
-	}
-	
-	JTable getTablaPartidas() {
-		String URL = "jdbc:mysql://localhost:3307/mastermind", USER = "root", PWD = "";
-		String querySelect ="select partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas, count(*) as cantidad_tiradas, partidas.partida_acabada " +
-							"from mastermind.partidas join mastermind.tiradas on partidas.id_partida = tiradas.id_partida " +
-							"group by partidas.id_partida, partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas having count(*)";
-		
-		Connection con = null;
-		Statement st = null;
-		ResultSet rs = null;
-		JTable table = null;
-		try {
-			
-			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection(URL, USER, PWD); 
-			st = con.createStatement(); 
-			rs = st.executeQuery(querySelect);
-			
-			Vector<Vector> rowData = new Vector<Vector>();
-			Vector<Object> columnNames = new Vector<Object>();
-			
-			columnNames.add("Nick");
-			columnNames.add("Fecha");
-			columnNames.add("Tipo partida");
-			columnNames.add("Numero de tiradas");
-			columnNames.add("Partida acabada?");
-			
-			while (rs.next()) {
-				Vector<String> row = new Vector<String>();
-				row.add(rs.getString(1));
-				row.add(rs.getString(2));
-				if (rs.getString(3).equals("0")) row.add("Principiante"); else row.add("Avanzada");
-				row.add(rs.getString(4));
-				if (rs.getString(5).equals("0")) row.add("NO"); else row.add("SI");
-				rowData.add(row);
-			}
-			
-			table = new JTable(rowData, columnNames);
-			
-			if (st != null) st.close();
-			if (con != null) con.close();
-			
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			Joc.mostraSQLException(e);
-		} finally {}
-		
-		return table;
 	}
 
 	abstract class NuevaPartidaListener implements ActionListener {
-		public void actionPerformed(ActionEvent ex) {
+		public void actua() {
 			partida.crearNumeroAleatorio();
 			Component[] componentList = panelTiradas.getComponents();
 			for (Component c: componentList) if (c instanceof JScrollPane) panelTiradas.remove(c);
 			scrollTableTiradas = new JScrollPane(tableTiradas);
 			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
 			try {
-				GuardarPartida.getInstance().actua(getPartida());
+				bd.guardaPartida(getPartida());
 			} catch (Exception e) {
 				System.out.println("ERROR No se ha podido guardar la partida.");
 			} finally {
 				System.out.println("\nLa partida se ha guardado con exito.\n");
 			}
-			
+		}
+		public void actionPerformed(ActionEvent ex) {
+			actua();
 		}
 	}
 	class NuevaPartidaPrincipianteListener extends NuevaPartidaListener {
-		public void actionPerformed(ActionEvent e) {
+		public void actua(ActionEvent e) {
 			partida = new PartidaPrincipiante();
 			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
 			tableTiradas = new JTable();
@@ -435,9 +433,21 @@ class JocFrame {
 			tableTiradas.setModel(dmTableTiradas);
 			super.actionPerformed(e);
 		}
-	}
-	class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
+		public void actua(PartidaPrincipiante p) {
+			partida = p;
+			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
+			tableTiradas.setModel(dmTableTiradas);
+			super.actua();
+		}
 		public void actionPerformed(ActionEvent e) {
+			actua(e);
+		}
+	}
+	private class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
+		public void actua(ActionEvent e) {
 			partida = new PartidaAvanzada();
 			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
 			tableTiradas = new JTable();
@@ -446,17 +456,38 @@ class JocFrame {
 			tableTiradas.setModel(dmTableTiradas);
 			super.actionPerformed(e);
 		}
+		public void actua(PartidaAvanzada p) {
+			partida = p;
+			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas"); 
+			tableTiradas.setModel(dmTableTiradas);
+			super.actua();
+		}
+		public void actionPerformed(ActionEvent e) {
+			actua(e);
+		}
 	}
 
 	class AddTiradaListener implements ActionListener {
+		
+		private byte[] numeroStringToByteArray(String entrada) throws NumberFormatException {
+			byte[] t = new byte[5];
+			if (entrada.length() < 1 || entrada.length() > 5) throw new NumberFormatException();
+			Integer.parseInt(entrada); // comprueba que sea numerico, en caso contrario lanzara NumberFormatException
+			while (entrada.length() < 5) entrada = "0" + entrada;
+			for (int i = 0; i < entrada.length(); i++) t[i] = Byte.parseByte("" + entrada.charAt(i));
+			return t;
+		}
+		
 		public void actionPerformed(ActionEvent ae) {
 			
 			String entrada = textFieldEntrada.getText();
 			
 			try {
-				Integer.parseInt(entrada);
 				
-				byte[] arrayEntrada = Joc.numeroStringToByteArray(entrada);
+				byte[] arrayEntrada = numeroStringToByteArray(entrada);
 				byte[] arrayNumeroAleatorio = partida.getNumeroAleatorio();
 				
 				Tirada tirada = new Tirada(arrayEntrada, arrayNumeroAleatorio);
@@ -465,6 +496,7 @@ class JocFrame {
 				tirada.crearMalPosicionados();
 				partida.addTirada(tirada);
 				partida.setPartidaAcabada();
+				bd.guardaTirada(tirada);
 				
 				if (partida instanceof PartidaPrincipiante) {
 					dmTableTiradas.addRow(new Object[]{tirada.getEntradaString(), tirada.getBienPosicionadosString(), tirada.getMalPosicionadosString()});
@@ -475,23 +507,60 @@ class JocFrame {
 				}
 				if (partida.getPartidaAcabada()) System.out.println("\nPARTIDA ACABADA");
 				
-			} catch (NumberFormatException e) {}
+			} catch (NumberFormatException e) {
+				System.out.println ("El valor no es correcto.");
+			}
+		}
+	}
+	
+	class SelectionHandler implements ListSelectionListener {
+		public void valueChanged(ListSelectionEvent e) {
+			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
+			
+			String s = "";
+			int index = 0;
+			int firstIndex = e.getFirstIndex();
+			int lastIndex = e.getLastIndex();
+			boolean isAdjusting = e.getValueIsAdjusting();
+			s = "Event for indexes "
+						  + firstIndex + " - " + lastIndex
+						  + "; isAdjusting is " + isAdjusting
+						  + "; selected indexes:";
+
+			if (lsm.isSelectionEmpty()) {
+				s = s + " <none>";
+			} else {
+				// Find out which indexes are selected.
+				int minIndex = lsm.getMinSelectionIndex();
+				int maxIndex = lsm.getMaxSelectionIndex();
+				for (int i = minIndex; i <= maxIndex; i++) {
+					if (lsm.isSelectedIndex(i)) {
+						index = i;
+					}
+				}
+			}
+		
+			String id = (String)tablePartidas.getModel().getValueAt(index, 0);
+			Partida partida = bd.cargarPartida(id);
+			if (partida instanceof PartidaPrincipiante) new NuevaPartidaPrincipianteListener().actua((PartidaPrincipiante)partida);
+			if (partida instanceof PartidaAvanzada) new NuevaPartidaAvanzadaListener().actua((PartidaAvanzada)partida);
+			System.out.println (partida);
 		}
 	}
 	
 }
 
-class GuardarPartida {
+class BD {
 	private final String DRIVER = "com.mysql.jdbc.Driver", URL = "jdbc:mysql://localhost:3307/mastermind", USER = "root", PWD = "";
 		
-	private static GuardarPartida INSTANCE = null;
+	private static BD INSTANCE = null;
 	
 	private Partida partida = null;
 	
-	private GuardarPartida(){}
+	private BD(){}
 	
-	public static GuardarPartida getInstance() {
-		if (INSTANCE == null) GuardarPartida.INSTANCE = new GuardarPartida();
+	public static BD getInstance() {
+		if (INSTANCE == null) BD.INSTANCE = new BD();
 		return INSTANCE;
 	}
 	
@@ -502,13 +571,15 @@ class GuardarPartida {
 	private Partida getPartida() {return this.partida;}
 	private void setPartida(Partida partida) {this.partida = partida;}
 	
-	private Connection conectaBD(String driver, String url, String user, String pwd) {
+	private Connection conectaBD(String driver, String url, String user, String pwd) throws ClassNotFoundException, SQLException {
 		Class.forName(driver);
 		return DriverManager.getConnection(url, user, pwd);
 	}
 	
-	public void actua(Partida partida) throws Exception {
+	public void guardaPartida(Partida partida) throws Exception {
 		setPartida(partida);
+		
+		boolean partidaExiste = false;
 		
 		Connection con = null; Statement st = null; ResultSet rs = null;
 		
@@ -538,53 +609,89 @@ class GuardarPartida {
 		} 
 	}
 	
-	public void guardaTirada(Tirada tirada) {
-		Partida partida = getPartida();
-		String insertTirada = "insert into tiradas (numero_aleatorio, nick, fecha, cantida_maxima_tiradas, partida_acabada) values ()";
+	public Partida cargarPartida(String id) {
+		Partida partida = null;
+		ArrayList<Tirada> tiradas = new ArrayList<Tirada>();
+		
+		
+		String selectPartida =	"select * from mastermind.partidas where partidas.id_partida = " + id;
+		String selectTiradas =	"select * from mastermind.tiradas where tiradas.id_partida = " + id;
+		String selectCantTiradas = 	"select count(*) from mastermind.tiradas where tiradas.id_partida = " + id;
+		
+		
+		Connection con = null; Statement st = null; ResultSet rs = null;
+		try {
+	
+			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
+			rs = st.executeQuery(selectTiradas);
+			while (rs.next()) tiradas.add(new Tirada(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5)));
+			rs = st.executeQuery(selectPartida);
+			rs.next(); 
+			if (rs.getInt(5) == 0) partida = new PartidaPrincipiante(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
+			else {
+				int vidas = rs.getInt(5), cantTiradas = 0;
+				partida = new PartidaAvanzada(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
+				rs = st.executeQuery(selectCantTiradas); rs.next();
+				cantTiradas = rs.getInt(1);
+				((PartidaAvanzada)partida).setCantidadVidas((byte)(vidas - cantTiradas));
+			}
+				
+			if (st != null) st.close(); if (con != null) con.close();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			Joc.mostraSQLException(e);
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} finally {
+			
+		} 
+		return partida;
 	}
 	
-}
-
-class CargarPartida {
-	private String URL = "jdbc:mysql://localhost:3307/mastermind", USER = "root", PWD = "";
-	private String querySelect =	"select partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas, count(*) as cantidad_tiradas " +
-							"from mastermind.partidas join mastermind.tiradas on partidas.id_partida = tiradas.id_partida " +
-							"where partidas.partida_acabada = 0 " +
-							"group by partidas.id_partida, partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas having count(*)";
-		
-	private static CargarPartida INSTANCE = null;
+	public void guardaTirada(Tirada tirada) {
+		Partida partida = getPartida();
+		String insertTirada = 	"insert into tiradas (id_partida, numero_entrado, mal_posicionados, bien_posicionados) values" +
+								"(" + partida.getId() + ", '" + tirada.getEntradaString() + "', '" + tirada.getMalPosicionadosString() + "', '" + tirada.getBienPosicionadosString() + "')";
+		Connection con = null; Statement st = null;						
+		try {
+			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
+			st.executeUpdate(insertTirada);
+			
+			System.out.println ("Se ha insertado la tirada: " + tirada);
+			
+			if (st != null) st.close();
+			if (con != null) con.close();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			Joc.mostraSQLException(e);
+		} finally {
+			
+		}
+	}
 	
-	private JFrame frame = new JFrame("Cargar partida");
-	private JPanel panel;
-	private JTable table;
-	
-	private CargarPartida(){}
-	
-	public void actua() {
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frame.setSize(600, 400);
-		panel = (JPanel)frame.getContentPane();
-		panel.setLayout(new BorderLayout());
-		
-		
+	public JTable getTablaPartidas() {
+		String querySelect ="select partidas.id_partida, partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas, partidas.partida_acabada " +
+							"from mastermind.partidas ";
 		
 		Connection con = null;
 		Statement st = null;
 		ResultSet rs = null;
+		JTable table = null;
 		try {
 			
-			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection(URL, USER, PWD); 
-			st = con.createStatement(); 
+			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
 			rs = st.executeQuery(querySelect);
 			
 			Vector<Vector> rowData = new Vector<Vector>();
 			Vector<Object> columnNames = new Vector<Object>();
 			
-			columnNames.add("Numero aleatorio");
+			columnNames.add("#");
 			columnNames.add("Nick");
 			columnNames.add("Fecha");
-			columnNames.add("Numero de vidas");
+			columnNames.add("Tipo partida");
+			columnNames.add("Cant. maxima vidas");
 			columnNames.add("Partida acabada?");
 			
 			while (rs.next()) {
@@ -592,14 +699,13 @@ class CargarPartida {
 				row.add(rs.getString(1));
 				row.add(rs.getString(2));
 				row.add(rs.getString(3));
-				row.add(rs.getString(4));
-				row.add(rs.getString(5));
+				if (rs.getString(4).equals("0")) row.add("Principiante"); else row.add("Avanzada");
+				if (rs.getString(4).equals("0")) row.add("N/A"); else row.add(rs.getString(4));
+				if (rs.getString(5).equals("0")) row.add("NO"); else row.add("SI");
 				rowData.add(row);
 			}
 			
 			table = new JTable(rowData, columnNames);
-			JScrollPane scroll = new JScrollPane(table);
-			panel.add(scroll, BorderLayout.CENTER);	
 			
 			if (st != null) st.close();
 			if (con != null) con.close();
@@ -610,66 +716,7 @@ class CargarPartida {
 			Joc.mostraSQLException(e);
 		} finally {}
 		
-		frame.setLocationRelativeTo(null);
-		frame.setResizable(true);
-		frame.setVisible(true);
-	}
-	
-	public static CargarPartida getInstance() {
-		if (INSTANCE == null) CargarPartida.INSTANCE = new CargarPartida();
-		return CargarPartida.INSTANCE;
-	}
-	
-	String getUrl() {return this.URL;}
-	String getUser() {return this.USER;}
-	String getPwd() {return this.PWD;}
-	
-	
-	private void mostraSQLException(SQLException ex) {
-		ex.printStackTrace(System.err);
-		System.err.println("SQLState:   " + ex.getSQLState());
-		System.err.println("Error Code: " + ex.getErrorCode());
-		System.err.println("Message:    " + ex.getMessage());
-		Throwable t;
-		while ((t = ex.getCause()) != null) System.out.println("Cause:      " + t);
-	}
-	public void actua(Partida partida) throws Exception {
-		Connection con = null; Statement st = null; ResultSet rs = null;
-		
-		System.out.println (partida.getFecha());
-		
-		String insertPartida = 	"insert into partidas (numero_aleatorio, nick, fecha, cantidad_maxima_tiradas) " + 
-								"values( '" + partida.getNumeroAleatorioString() + "', '" + partida.getNick() + "', '" + partida.getFecha() + "', " + partida.getVidas() + ")";
-		String insertTirada;
-		
-		
-		String selectUltimaPartida =	"select max(partidas.id_partida) as id_max from partidas";
-		
-		try {
-			Class.forName("com.mysql.jdbc.Driver");
-			con = DriverManager.getConnection(getUrl(), getUser(), getPwd());
-			st = con.createStatement();
-			st.executeUpdate(insertPartida);
-			rs = st.executeQuery(selectUltimaPartida);
-			rs.next();
-			partida.setId(rs.getInt("id_max"));
-			
-			for (Iterator it = partida.getTiradas().iterator(); it.hasNext();) {
-				Tirada tirada = (Tirada)it.next();
-				insertTirada =	"insert into tiradas (id_partida, numero_entrado, mal_posicionados, bien_posicionados)" +
-								"values(" + partida.getId() + ", '" + tirada.getEntradaString() + "', '" + tirada.getMalPosicionadosString() + "', '" + tirada.getBienPosicionadosString() + "')";
-				st.executeUpdate(insertTirada);
-			}
-				
-			if (st != null) st.close();
-			if (con != null) con.close();
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-		} catch (SQLException e) {
-			mostraSQLException(e);
-		} finally {
-			
-		} 
+		return table;
 	}
 	
 }
@@ -678,25 +725,7 @@ public class Joc {
 	private static Scanner in = new Scanner(System.in);
 	private JocFrame frame = new JocFrame();
 	
-	public static void nuevaPartida(Partida partida) {
-			
-		partida.crearNumeroAleatorio();
-		
-		while (!partida.getPartidaAcabada()) {
-			Tirada tirada = new Tirada(obtenerNumeroEntradoEnConsola(), partida.getNumeroAleatorio());
-			
-			tirada.crearBienPosicionados();
-			tirada.crearMalPosicionados();
-					
-			partida.addTirada(tirada);
-			
-			partida.setPartidaAcabada();
-			
-			imprimirTiradaEnConsola(partida);
-		}
-		
-		System.out.println("\n" + partida);
-	}
+	
 	
 	public static void mostraSQLException(SQLException ex) {
 		ex.printStackTrace(System.err);
@@ -707,107 +736,7 @@ public class Joc {
 		while ((t = ex.getCause()) != null) System.out.println("Cause:      " + t);
 	}
 	
-	static boolean escogerDificultad() {
-		char opcion;
-		
-		System.out.println ("Por favor, escoge una dificultad: ");
-		System.out.println ("\t1 - Principiante.\n\t Muestra donde esta cada numero bien y mal posicionado. Intentos ilimitados.");
-		System.out.println ("\t2 - Avanzado.\n\t Muestra solo la cantidad de numeros bien y mal posicionados. 10 intentos.\n");
-		
-		if ((opcion = in.next().charAt(0)) == '2') {
-			return true;
-		} else {
-			return false;
-		}
-		
-	}
 	
-	static byte[] obtenerNumeroEntradoEnConsola() {
-		byte[] entrada = new byte[5];
-		String numeroEntrado = "";
-		boolean numeroCorrecto = false;
-		
-		System.out.println ("\nPor favor, inserta un numero de entre 1 y 5 cifras: ");
-		while (!numeroCorrecto) {
-			numeroEntrado = in.next();
-			
-
-			if (numeroEntrado.length() < 1 || numeroEntrado.length() > 5) {
-				System.out.println ("Numero incorrecto. Por favor, inserta otro.");
-			} else {
-				numeroCorrecto = true;
-			}
-		}
-		
-		StringBuffer sb = new StringBuffer(numeroEntrado);
-		
-		while (sb.length() < 5) {
-			sb.insert(0, '0');
-		}
-		
-		numeroEntrado = sb.toString();
-		
-		for (int i = 0; i < numeroEntrado.length(); i++) {
-			entrada[i] = Byte.parseByte("" + numeroEntrado.charAt(i));
-		}
-		
-		return entrada;
-	}
-	
-	public static byte[] numeroStringToByteArray(String numeroEntrado) {
-		byte[] entrada = {0,0,0,0,0};
-		boolean numeroCorrecto = false;
-		
-		try { // comprobar si numeroEntrado es un numero. Si no, retornar entrada sin mas
-			Integer.parseInt(numeroEntrado);
-		} catch (NumberFormatException e) {
-			return entrada;
-		}
-		
-		StringBuffer sb = new StringBuffer(numeroEntrado);
-		
-		while (sb.length() < 5) {
-			sb.insert(0, '0');
-		}
-		
-		numeroEntrado = sb.toString();
-		
-		for (int i = 0; i < numeroEntrado.length(); i++) {
-			entrada[i] = Byte.parseByte("" + numeroEntrado.charAt(i));
-		}
-		
-		return entrada;
-	}
-	
-	public static void imprimirTiradaEnConsola(Partida partida) {
-		
-		if (partida instanceof PartidaBasica) System.out.println(partida.getUltimaTirada());
-		if (partida instanceof PartidaAvanzada) {
-			
-			PartidaAvanzada partidaAvanzada = (PartidaAvanzada)partida;
-			
-			Tirada ultimaTirada = partida.getUltimaTirada();
-			
-			System.out.println("\nBien posicionados: " + ultimaTirada.getCantidadBienPosicionados());
-			System.out.println("Mal posicionados:  " + ultimaTirada.getCantidadMalPosicionados());
-			System.out.println("Vidas:             " + partidaAvanzada.getCantidadVidas());
-		}
-		
-	}
-	
-	public static void intro() {
-		System.out.println ("--< MASTERMIND >--\n");
-		System.out.println ("REGLAS:");
-		System.out.println ("- Has de introducir un numero entre 0 y 99999.");
-		System.out.println ("- Si el numero es mas pequeño que 10000 (ex. 2343), se rellenara de ceros\n por la izquierda.");
-		System.out.println ("- Si todos los digitos del numero son del mismo valor\ny tienen la misma posicion, GANAS! ");
-		System.out.println ("\nGOOD LUCK HAVE FUN!\n");
-	}
-	
-	public static String getNick() {
-		System.out.println ("Por favor, inserta tu nombre: ");
-		return new Scanner(System.in).next();
-	}
 	
 	public static void main (String args[]) {
 		new Joc();
