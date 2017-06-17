@@ -37,7 +37,7 @@ class Tirada implements Serializable {
 	}
 	public void setEntrada(String arg) throws NumberFormatException {
 		byte[] t = new byte[5];
-		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length(); i++) t[i] = Byte.parseByte("" + arg.charAt(i));
 		this.entrada = t;
 	}
 	public byte[] getMalPosicionados() {
@@ -46,7 +46,7 @@ class Tirada implements Serializable {
 	}
 	public void setMalPosicionados(String arg) throws NumberFormatException {
 		byte[] t = new byte[5];
-		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length(); i++) t[i] = Byte.parseByte("" + arg.charAt(i));
 		this.malPosicionados = t;
 	}
 	public void crearMalPosicionados() {
@@ -71,7 +71,7 @@ class Tirada implements Serializable {
 	}
 	public void setBienPosicionados(String arg) throws NumberFormatException {
 		byte[] t = new byte[5];
-		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length(); i++) t[i] = Byte.parseByte("" + arg.charAt(i));
 		this.bienPosicionados = t;
 	}
 	public void crearBienPosicionados() {
@@ -205,7 +205,7 @@ abstract class Partida implements Serializable {
 	public Partida() {}
 	public Partida(int id, String numeroAleatorio, String nick, String fecha, byte vidas, boolean partidaAcabada, ArrayList<Tirada> tiradas) throws NumberFormatException {
 		setNumeroAleatorio(numeroAleatorio);
-		tiradas = new ArrayList<Tirada>(tiradas);
+		this.tiradas = new ArrayList<Tirada>(tiradas);
 		setPartidaAcabada(partidaAcabada);
 		setNick(nick);
 		setFecha(fecha);
@@ -216,7 +216,7 @@ abstract class Partida implements Serializable {
 	public byte[] getNumeroAleatorio() {return numeroAleatorio;}
 	public void setNumeroAleatorio(String arg) throws NumberFormatException {
 		byte[] t = new byte[5];
-		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length() - 1; i++) t[i] = Byte.parseByte("" + arg.charAt(i));
+		Integer.parseInt(arg); if (arg.length() == 5) for (int i = 0; i < arg.length(); i++) t[i] = Byte.parseByte("" + arg.charAt(i));
 		this.numeroAleatorio = t;
 	}
 	public String getNumeroAleatorioString() {
@@ -227,7 +227,7 @@ abstract class Partida implements Serializable {
 	}
 	
 	public Tirada getUltimaTirada() {return getTiradas().get((getTiradas().size()) - 1);}
-	public java.util.List<Tirada> getTiradas() {return new java.util.ArrayList<>(this.tiradas);}
+	public java.util.List<Tirada> getTiradas() {return new java.util.ArrayList<Tirada>(this.tiradas);}
 	
 	public boolean getPartidaAcabada() {return this.partidaAcabada;}
 	public void setPartidaAcabada(boolean partidaAcabada) {this.partidaAcabada = partidaAcabada;}
@@ -405,6 +405,9 @@ class JocFrame {
 	}
 
 	abstract class NuevaPartidaListener implements ActionListener {
+		
+		//public abstract void cargaPartida(Partida partida);
+		
 		public void actua() {
 			partida.crearNumeroAleatorio();
 			Component[] componentList = panelTiradas.getComponents();
@@ -424,6 +427,21 @@ class JocFrame {
 		}
 	}
 	class NuevaPartidaPrincipianteListener extends NuevaPartidaListener {
+		public void cargaPartida(PartidaPrincipiante p) {
+			labelTitulo.setText("CONTINUAR PARTIDA PRINCIPIANTE");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			tableTiradas.setModel(dmTableTiradas);
+			scrollTableTiradas = new JScrollPane(tableTiradas);
+			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
+			for(Iterator it = p.getTiradas().iterator(); it.hasNext();) {
+				Tirada t = (Tirada)it.next();
+				dmTableTiradas.addRow(new Object[]{t.getEntradaString(), t.getBienPosicionadosString(), t.getMalPosicionadosString()});
+			}
+			partida = p;
+			bd.setPartida(partida);
+		}
 		public void actua(ActionEvent e) {
 			partida = new PartidaPrincipiante();
 			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
@@ -447,6 +465,21 @@ class JocFrame {
 		}
 	}
 	private class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
+		public void cargaPartida(PartidaAvanzada p) {
+			labelTitulo.setText("CONTINUAR PARTIDA AVANZADA");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			tableTiradas.setModel(dmTableTiradas);
+			scrollTableTiradas = new JScrollPane(tableTiradas);
+			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas");
+			for(Iterator it = p.getTiradas().iterator(); it.hasNext();) {
+				Tirada t = (Tirada)it.next();
+				dmTableTiradas.addRow(new Object[]{t.getEntradaString(), t.getCantidadBienPosicionados(), t.getCantidadMalPosicionados(), ((PartidaAvanzada)p).getCantidadVidas()});
+			}
+			partida = p;
+			bd.setPartida(partida);
+		}
 		public void actua(ActionEvent e) {
 			partida = new PartidaAvanzada();
 			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
@@ -515,36 +548,43 @@ class JocFrame {
 	
 	class SelectionHandler implements ListSelectionListener {
 		public void valueChanged(ListSelectionEvent e) {
-			ListSelectionModel lsm = (ListSelectionModel)e.getSource();
-			
-			String s = "";
-			int index = 0;
-			int firstIndex = e.getFirstIndex();
-			int lastIndex = e.getLastIndex();
-			boolean isAdjusting = e.getValueIsAdjusting();
-			s = "Event for indexes "
-						  + firstIndex + " - " + lastIndex
-						  + "; isAdjusting is " + isAdjusting
-						  + "; selected indexes:";
+			if (! e.getValueIsAdjusting()) {
+				ListSelectionModel lsm = (ListSelectionModel)e.getSource();
+				
+				String s = "";
+				int index = 0;
+				int firstIndex = e.getFirstIndex();
+				int lastIndex = e.getLastIndex();
+				boolean isAdjusting = e.getValueIsAdjusting();
+				s = "Event for indexes "
+							  + firstIndex + " - " + lastIndex
+							  + "; isAdjusting is " + isAdjusting
+							  + "; selected indexes:";
 
-			if (lsm.isSelectionEmpty()) {
-				s = s + " <none>";
-			} else {
-				// Find out which indexes are selected.
-				int minIndex = lsm.getMinSelectionIndex();
-				int maxIndex = lsm.getMaxSelectionIndex();
-				for (int i = minIndex; i <= maxIndex; i++) {
-					if (lsm.isSelectedIndex(i)) {
-						index = i;
+				if (lsm.isSelectionEmpty()) {
+					s = s + " <none>";
+				} else {
+					// Find out which indexes are selected.
+					int minIndex = lsm.getMinSelectionIndex();
+					int maxIndex = lsm.getMaxSelectionIndex();
+					for (int i = minIndex; i <= maxIndex; i++) {
+						if (lsm.isSelectedIndex(i)) {
+							index = i;
+						}
 					}
 				}
+			
+				String id = (String)tablePartidas.getModel().getValueAt(index, 0);
+				Partida partida = bd.cargarPartida(id);
+				Component[] componentList = panelTiradas.getComponents();
+				tableTiradas = new JTable();
+				scrollTableTiradas = new JScrollPane();
+				dmTableTiradas = new DefaultTableModel();
+				for (Component c: componentList) if (c instanceof JScrollPane) panelTiradas.remove(c);
+				for (Component c: componentList) if (c instanceof JTable) panelTiradas.remove(c);
+				if (partida instanceof PartidaPrincipiante) new NuevaPartidaPrincipianteListener().cargaPartida((PartidaPrincipiante)partida);
+				if (partida instanceof PartidaAvanzada) new NuevaPartidaAvanzadaListener().cargaPartida((PartidaAvanzada)partida);
 			}
-		
-			String id = (String)tablePartidas.getModel().getValueAt(index, 0);
-			Partida partida = bd.cargarPartida(id);
-			if (partida instanceof PartidaPrincipiante) new NuevaPartidaPrincipianteListener().actua((PartidaPrincipiante)partida);
-			if (partida instanceof PartidaAvanzada) new NuevaPartidaAvanzadaListener().actua((PartidaAvanzada)partida);
-			System.out.println (partida);
 		}
 	}
 	
@@ -569,7 +609,7 @@ class BD {
 	private String getUser() {return this.USER;}
 	private String getPwd() {return this.PWD;}
 	private Partida getPartida() {return this.partida;}
-	private void setPartida(Partida partida) {this.partida = partida;}
+	public void setPartida(Partida partida) {this.partida = partida;}
 	
 	private Connection conectaBD(String driver, String url, String user, String pwd) throws ClassNotFoundException, SQLException {
 		Class.forName(driver);
@@ -622,19 +662,30 @@ class BD {
 		Connection con = null; Statement st = null; ResultSet rs = null;
 		try {
 	
-			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
+			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
 			rs = st.executeQuery(selectTiradas);
-			while (rs.next()) tiradas.add(new Tirada(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5)));
+			rs.first();
+			while (rs.next()) {
+				Tirada t = new Tirada(rs.getInt(1), rs.getInt(2), rs.getString(3), rs.getString(4), rs.getString(5));
+				tiradas.add(t);
+			}
+				
 			rs = st.executeQuery(selectPartida);
 			rs.next(); 
-			if (rs.getInt(5) == 0) partida = new PartidaPrincipiante(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
-			else {
+			if (rs.getInt(5) == 0) {
+				partida = new PartidaPrincipiante(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
+				
+				
+				
+			} else {
 				int vidas = rs.getInt(5), cantTiradas = 0;
 				partida = new PartidaAvanzada(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
 				rs = st.executeQuery(selectCantTiradas); rs.next();
 				cantTiradas = rs.getInt(1);
 				((PartidaAvanzada)partida).setCantidadVidas((byte)(vidas - cantTiradas));
 			}
+				
+			System.out.println (partida);	
 				
 			if (st != null) st.close(); if (con != null) con.close();
 		} catch (ClassNotFoundException e) {
