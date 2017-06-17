@@ -8,7 +8,7 @@ import javax.swing.*;
 import java.awt.event.*;
 import javax.swing.event.*;
 import javax.swing.table.*;
-import java.sql.*; // no comment
+import java.sql.*; // no comments
 
 class Tirada implements Serializable {
 	private byte[] entrada, malPosicionados, bienPosicionados, numeroAleatorio;
