@@ -1,0 +1,8 @@
+BIENVENID@ A MASTERMIND!
+
+En este juego has de adivinar un numero de 5 cifras que la máquina genera aleatoriamente.
+
+Como jugar?
+	- Inserta un número.
+	- La máquina devolverá una fila con el numero de cifras bien posicionadas y mal posicionadas.
+ 	- Si adivinas el número, GANAS!

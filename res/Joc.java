@@ -1,5 +1,6 @@
 import java.util.*;
 import java.io.*;
+import java.net.*;
 import java.text.*;
 import java.time.*;
 import java.nio.file.Files;
@@ -170,10 +171,12 @@ class PartidaAvanzada extends Partida implements Serializable {
 	public void setCantidadVidas(byte cantidadVidas) {this.cantidadVidas = cantidadVidas;}
 	
 	public void setPartidaAcabada() {
-		int bienPosicionados = getUltimaTirada().getCantidadBienPosicionados();
-		if (bienPosicionados == 5 || getCantidadVidas() < 1) setPartidaAcabada(true);
-		else setPartidaAcabada(false);
-		cantidadVidas--;
+		if (!getPartidaAcabada() && !getTiradas().isEmpty()) {
+			int bienPosicionados = getUltimaTirada().getCantidadBienPosicionados();
+			if (bienPosicionados == 5 || getCantidadVidas() < 2 ||  getCantidadVidas() == 1) setPartidaAcabada(true);
+			else setPartidaAcabada(false);
+			cantidadVidas--;
+		} 
 	}
 }
 
@@ -185,9 +188,11 @@ class PartidaPrincipiante extends Partida implements Serializable {
 	}
 	
 	public void setPartidaAcabada() {
-		int bienPosicionados = getUltimaTirada().getCantidadBienPosicionados();
-		if (bienPosicionados == 5) setPartidaAcabada(true);
-		else setPartidaAcabada(false);
+		if (!getPartidaAcabada() && !getTiradas().isEmpty()) {
+			int bienPosicionados = getUltimaTirada().getCantidadBienPosicionados();
+			if (bienPosicionados == 5) setPartidaAcabada(true);
+			else setPartidaAcabada(false);
+		} 
 	}
 	
 }
@@ -226,7 +231,11 @@ abstract class Partida implements Serializable {
 		return res.toString();
 	}
 	
-	public Tirada getUltimaTirada() {return getTiradas().get((getTiradas().size()) - 1);}
+	public Tirada getUltimaTirada() {
+		if (!getTiradas().isEmpty())
+		return getTiradas().get((getTiradas().size()) - 1);
+		return null;
+	}
 	public java.util.List<Tirada> getTiradas() {return new java.util.ArrayList<Tirada>(this.tiradas);}
 	
 	public boolean getPartidaAcabada() {return this.partidaAcabada;}
@@ -269,69 +278,90 @@ abstract class Partida implements Serializable {
 		
 		sbPartida = new StringBuffer();
 		
-		sbPartida.append("Jugador: " + getNick() + "\n");
-		sbPartida.append("Fecha:   " + getFecha() + "\n");
+		sbPartida.append("Jugador: 			  " + getNick() + "\n");
+		sbPartida.append("Fecha:   			  " + getFecha() + "\n");
+		sbPartida.append("Partida acabada?:   " + getPartidaAcabada() + "\n");
+		sbPartida.append("Vidas:              " + getVidas() + "\n");
+		sbPartida.append("\t------ INICIO TIRADAS ------\n");
 		for (Iterator iterator = tiradas.iterator(); iterator.hasNext();) {
 			sbPartida.append(iterator.next().toString() + " #" + contador + "\n");
 			contador++;
 		}
-		
+		sbPartida.append("\t------ FIN TIRADAS ------\n");
 		return sbPartida.toString();
 	}
 }
 
-//~ class FrameBienvenida {
-	//~ JFrame frame = new JFrame("Bienvenid@ - MasterMind 1.2");
-	//~ JPanel panel;
-	//~ JLabel labelWelcome = new JLabel("WELCOME TO MASTERMIND!");
-	//~ ButtonGroup radiosPartida = new ButtonGroup();
-	//~ JRadioButton radioPartidaPrincipiante = new JRadioButton("Principiante", true);
-	//~ JRadioButton radioPartidaAvanzada = new JRadioButton("Avanzada", true);
-	//~ JButton buttonNuevaPartida = new JButton("Nueva partida");
+class AyudaFrame {
+	JFrame frame = new JFrame("Sobre MasterMind");
+	JPanel panel = (JPanel)frame.getContentPane();
 	
-	//~ public FrameBienvenida() {
-		//~ frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		//~ frame.setSize(400, 200);
-		//~ JPanel panel = (JPanel)frame.getContentPane();
-		//~ panel.setLayout(new FlowLayout(FlowLayout.CENTER));
-		
-		//~ labelWelcome.setFont(new Font("Arial", Font.PLAIN, 16));
-		
-		//~ radiosPartida.add(radioPartidaPrincipiante);
-		//~ radiosPartida.add(radioPartidaAvanzada);
-		
-		//~ panel.add(labelWelcome);
-		//~ panel.add(radioPartidaPrincipiante);
-		//~ panel.add(radioPartidaAvanzada);
-		//~ panel.add(buttonNuevaPartida);
-		
-		//~ buttonNuevaPartida.addActionListener(new PartidaListener());
-		
-		//~ frame.setLocationRelativeTo(null);
-		//~ frame.setResizable(false);
-		//~ frame.setVisible(true);
-	//~ }
+	JTextArea textArea = new JTextArea();
 	
-	//~ class PartidaListener implements ActionListener {
-		//~ public void actionPerformed(ActionEvent e) {
-			//~ if (radioPartidaPrincipiante.isSelected()) Joc.nuevaPartida(new PartidaPrincipiante());
-			//~ if (radioPartidaAvanzada.isSelected()) Joc.nuevaPartida(new PartidaAvanzada());
-			//~ System.exit(0);
-		//~ }
-	//~ }
-//~ }
+	JButton buttonOk = new JButton("OK!");
+	
+	public AyudaFrame() {
+		frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+		frame.setSize(700, 300);
+		
+		textArea.setEditable(false);
+		
+		panel.setLayout(new BorderLayout());
+		panel.add(textArea, BorderLayout.CENTER);
+		panel.add(buttonOk, BorderLayout.SOUTH);
+		
+		buttonOk.addActionListener(new OkListener());
+		
+		escribirAyuda("../ayuda.txt");
+		
+		frame.setLocationRelativeTo(null);
+		frame.setResizable(false);
+		frame.setVisible(true);
+	}
+	
+	private String getFileContentFromPath(String path) throws FileNotFoundException, IOException {
+		StringBuffer file = new StringBuffer();
+		int c = 0;
+		BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(new File(path)))); // obtener html desde url
+		while((c = br.read()) != -1) file.append((char)c); br.close();// pasar html obtenido a un string caracter por caracter
+		return file.toString();
+	}
+	
+	private void escribirAyuda(String path) {
+		String contenido = "";
+		try {
+			contenido = getFileContentFromPath(path);
+			textArea.setText(contenido);
+		} catch (FileNotFoundException e) {
+			System.out.println ("No se ha encontrado el archivo " + path);
+		} catch (IOException e) {
+			e.printStackTrace();
+		} 
+		
+	}
+	
+	class OkListener implements ActionListener {
+		public void actionPerformed(ActionEvent ae) {
+			frame.setVisible(false);
+			frame.dispose();
+		}
+	}
+}
 
 class JocFrame {
 	
 	private Vector<Vector> rowData = null;
 	private Vector<String> columnNames = null;
 	
-	private JFrame frame = new JFrame("MasterMind 1.2");
+	private JFrame frame = new JFrame("MasterMind");
 	private JPanel panel;
 	private JMenuBar menuBar = new JMenuBar();
 	private JMenu menuNuevaPartida = new JMenu("Nueva partida");
 	private JMenuItem itemNuevaPartidaPrincipiante = new JMenuItem("Principiante");
 	private JMenuItem itemNuevaPartidaAvanzada = new JMenuItem("Avanzada");
+	private JLabel itemLabelNick = new JLabel("Nick:");
+	private JTextField itemTextFieldNick = new JTextField("Anonymous");
+	private JMenuItem itemAyuda = new JMenuItem("Ayuda");
 	
 	private JLabel labelTitulo = new JLabel("MASTERMIND");
 	private JPanel panelTitulo = new JPanel(new BorderLayout());
@@ -342,25 +372,33 @@ class JocFrame {
 	private JScrollPane scrollTableTiradas = new JScrollPane(tableTiradas);
 	private JTextField textFieldEntrada = new JTextField();
 	private JButton buttonEntrada = new JButton("Entrar");
+	private JPanel panelEntrada;
 	
-	private JPanel panelPartidas = new JPanel();
+	private JPanel panelPartidas;
 	private JLabel labelPartidasGuardadas = new JLabel("Partidas Guardadas");
 	private JTable tablePartidas;
 	private ListSelectionModel tablePartidasSelectionModel;
 	private JScrollPane scrollTablePartidas;
+	private JPanel panelPartidasBotones;
+	private JButton buttonBorrarPartida;
+	private JButton buttonBorrarTodo;
 
 	private Partida partida;
 	private BD bd = BD.getInstance();
 	
 	public JocFrame() {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-		frame.setSize(1000, 600);
+		frame.setSize(950, 550);
 		
 		menuBar.add(menuNuevaPartida);
 		menuNuevaPartida.add(itemNuevaPartidaPrincipiante);
 		menuNuevaPartida.add(itemNuevaPartidaAvanzada);
+		//menuBar.add(new JSeparator());
+		menuBar.add(itemLabelNick);
+		menuBar.add(itemTextFieldNick);
+		menuBar.add(itemAyuda);
 		
-		JPanel panelEntrada = new JPanel();
+		panelEntrada = new JPanel();
 		panelEntrada.setLayout(new BorderLayout());
 		panelEntrada.add(textFieldEntrada, BorderLayout.CENTER);
 		panelEntrada.add(buttonEntrada, BorderLayout.EAST);
@@ -368,15 +406,8 @@ class JocFrame {
 		panelTitulo.add(labelTitulo, BorderLayout.CENTER);
 		
 		panelTiradas.setLayout(new BorderLayout());
-		panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
 		
-		panelPartidas.setLayout(new BorderLayout());
-		tablePartidas = bd.getTablaPartidas();
-		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
-		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
-		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		scrollTablePartidas = new JScrollPane(tablePartidas);
-		panelPartidas.add(scrollTablePartidas, BorderLayout.CENTER);
+		actualizaPanelPartidas();
 		
 		Box boxPartida = Box.createHorizontalBox();
 		boxPartida.add(panelTiradas);
@@ -393,29 +424,103 @@ class JocFrame {
 		itemNuevaPartidaPrincipiante.addActionListener(new NuevaPartidaPrincipianteListener());
 		itemNuevaPartidaAvanzada.addActionListener(new NuevaPartidaAvanzadaListener());
 		buttonEntrada.addActionListener(new AddTiradaListener());
+		itemAyuda.addActionListener(new AyudaListener());
 		
 		frame.setJMenuBar(menuBar);
 		frame.setLocationRelativeTo(null);
-		frame.setResizable(true);
+		frame.setResizable(false);
 		frame.setVisible(true);
 	}
 	
 	private Partida getPartida() {
 		return this.partida;
 	}
+	
+	public void actualizaPanelPartidas() {
+		Component[] componentList = panelTiradas.getComponents();
+		for (Component c: componentList) if (c instanceof Component) panelPartidas.remove(c);
+		panelPartidas = new JPanel();
+		panelPartidas.setLayout(new BorderLayout());
+		tablePartidas = bd.getTablaPartidas();
+		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
+		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
+		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		scrollTablePartidas = new JScrollPane(tablePartidas);
+		panelPartidas.add(scrollTablePartidas, BorderLayout.CENTER);
+		panelPartidasBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		buttonBorrarTodo = new JButton("Borrar todo");
+		buttonBorrarTodo.setForeground(Color.white);
+		buttonBorrarTodo.setBackground(Color.red);
+		buttonBorrarTodo.addActionListener(new BorrarTodoListener());
+		panelPartidasBotones.add(buttonBorrarTodo);
+		panelPartidas.add(panelPartidasBotones, BorderLayout.SOUTH);
+	}
+	public void actualizaPanelTiradas() {
+		
+	}
+	
+	class BorrarTodoListener implements ActionListener {
+		private JFrame frame = new JFrame("Advertencia");
+		private JPanel panel = (JPanel)frame.getContentPane();
+		private JLabel label = new JLabel("La siguiente accion borrara todas\n las partidas de la BD, al igual que sus tiradas.\n Desea continuar?");
+		private JPanel panelButtons = new JPanel(new FlowLayout(FlowLayout.CENTER));
+		private JButton si = new JButton("Si"), no = new JButton("No");
+		
+		public void actionPerformed(ActionEvent ae) {
+			frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+			frame.setSize(600, 200);
+			panel.setLayout(new BorderLayout());
+			
+			panel.add(label, BorderLayout.CENTER);
+			panelButtons.add(si);
+			panelButtons.add(no);
+			panel.add(panelButtons, BorderLayout.SOUTH);
+			
+			si.addActionListener(new SiListener());
+			no.addActionListener(new NoListener());
+			
+			frame.setLocationRelativeTo(null);
+			frame.setResizable(false);
+			frame.setVisible(true);
+		}
+		
+		abstract class ButtonListener implements ActionListener {
+			public void actionPerformed(ActionEvent ae) {
+				frame.setVisible(false);
+				actualizaPanelPartidas();
+				frame.dispose();
+			}
+		}
+		class SiListener extends ButtonListener {
+			public void actionPerformed(ActionEvent ae) {
+				bd.borrarTodo();
+				super.actionPerformed(ae);
+			}
+		}
+		class NoListener extends ButtonListener {
+			public void actionPerformed(ActionEvent ae) {
+				super.actionPerformed(ae);
+			}
+		}
+	}
 
 	abstract class NuevaPartidaListener implements ActionListener {
 		
-		//public abstract void cargaPartida(Partida partida);
+		public void addComponents() {
+			Component[] componentList = panelTiradas.getComponents();
+			for (Component c: componentList) if (c instanceof JComponent) panelTiradas.remove(c);
+			scrollTableTiradas = new JScrollPane(tableTiradas);
+			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
+			//actualizaPanelPartidas();
+		}
 		
 		public void actua() {
 			partida.crearNumeroAleatorio();
-			Component[] componentList = panelTiradas.getComponents();
-			for (Component c: componentList) if (c instanceof JScrollPane) panelTiradas.remove(c);
-			scrollTableTiradas = new JScrollPane(tableTiradas);
-			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			partida.setNick(itemTextFieldNick.getText());
 			try {
 				bd.guardaPartida(getPartida());
+				dmTablePartidas
 			} catch (Exception e) {
 				System.out.println("ERROR No se ha podido guardar la partida.");
 			} finally {
@@ -441,15 +546,7 @@ class JocFrame {
 			}
 			partida = p;
 			bd.setPartida(partida);
-		}
-		public void actua(ActionEvent e) {
-			partida = new PartidaPrincipiante();
-			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
-			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
-			tableTiradas.setModel(dmTableTiradas);
-			super.actionPerformed(e);
+			super.addComponents();
 		}
 		public void actua(PartidaPrincipiante p) {
 			partida = p;
@@ -461,10 +558,17 @@ class JocFrame {
 			super.actua();
 		}
 		public void actionPerformed(ActionEvent e) {
-			actua(e);
+			partida = new PartidaPrincipiante();
+			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
+			tableTiradas.setModel(dmTableTiradas);
+			super.actionPerformed(e);
+			super.addComponents();
 		}
 	}
-	private class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
+	class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
 		public void cargaPartida(PartidaAvanzada p) {
 			labelTitulo.setText("CONTINUAR PARTIDA AVANZADA");
 			tableTiradas = new JTable();
@@ -479,15 +583,7 @@ class JocFrame {
 			}
 			partida = p;
 			bd.setPartida(partida);
-		}
-		public void actua(ActionEvent e) {
-			partida = new PartidaAvanzada();
-			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
-			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas"); 
-			tableTiradas.setModel(dmTableTiradas);
-			super.actionPerformed(e);
+			super.addComponents();
 		}
 		public void actua(PartidaAvanzada p) {
 			partida = p;
@@ -499,7 +595,14 @@ class JocFrame {
 			super.actua();
 		}
 		public void actionPerformed(ActionEvent e) {
-			actua(e);
+			partida = new PartidaAvanzada();
+			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
+			tableTiradas = new JTable();
+			dmTableTiradas = new DefaultTableModel();
+			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas"); 
+			tableTiradas.setModel(dmTableTiradas);
+			super.actionPerformed(e);
+			super.addComponents();
 		}
 	}
 
@@ -515,38 +618,48 @@ class JocFrame {
 		}
 		
 		public void actionPerformed(ActionEvent ae) {
+			bd.setPartida(partida);
+			System.out.println (partida.getPartidaAcabada());
 			
-			String entrada = textFieldEntrada.getText();
 			
-			try {
-				
-				byte[] arrayEntrada = numeroStringToByteArray(entrada);
-				byte[] arrayNumeroAleatorio = partida.getNumeroAleatorio();
-				
-				Tirada tirada = new Tirada(arrayEntrada, arrayNumeroAleatorio);
-				
-				tirada.crearBienPosicionados();
-				tirada.crearMalPosicionados();
-				partida.addTirada(tirada);
-				partida.setPartidaAcabada();
-				bd.guardaTirada(tirada);
-				
-				if (partida instanceof PartidaPrincipiante) {
-					dmTableTiradas.addRow(new Object[]{tirada.getEntradaString(), tirada.getBienPosicionadosString(), tirada.getMalPosicionadosString()});
+			if (!partida.getPartidaAcabada()) {
+				String entrada = textFieldEntrada.getText();
+			
+				try {
+					
+					byte[] arrayEntrada = numeroStringToByteArray(entrada);
+					byte[] arrayNumeroAleatorio = partida.getNumeroAleatorio();
+					
+					Tirada tirada = new Tirada(arrayEntrada, arrayNumeroAleatorio);
+					
+					tirada.crearBienPosicionados();
+					tirada.crearMalPosicionados();
+					partida.addTirada(tirada);
+					partida.setPartidaAcabada();
+					bd.guardaTirada(tirada);
+					
+					if (partida instanceof PartidaPrincipiante) {
+						dmTableTiradas.addRow(new Object[]{tirada.getEntradaString(), tirada.getBienPosicionadosString(), tirada.getMalPosicionadosString()});
+					}
+					if (partida instanceof PartidaAvanzada) {
+						PartidaAvanzada partidaAvanzada = (PartidaAvanzada)partida;
+						dmTableTiradas.addRow(new Object[]{tirada.getEntradaString(), tirada.getCantidadBienPosicionados(), tirada.getCantidadMalPosicionados(), partidaAvanzada.getCantidadVidas()});
+					}
+					if (getPartida().getPartidaAcabada()) System.out.println("\nPARTIDA ACABADA");
+					
+				} catch (NumberFormatException e) {
+					System.out.println ("El valor no es correcto.");
 				}
-				if (partida instanceof PartidaAvanzada) {
-					PartidaAvanzada partidaAvanzada = (PartidaAvanzada)partida;
-					dmTableTiradas.addRow(new Object[]{tirada.getEntradaString(), tirada.getCantidadBienPosicionados(), tirada.getCantidadMalPosicionados(), partidaAvanzada.getCantidadVidas()});
-				}
-				if (partida.getPartidaAcabada()) System.out.println("\nPARTIDA ACABADA");
-				
-			} catch (NumberFormatException e) {
-				System.out.println ("El valor no es correcto.");
-			}
+			} else System.out.println ("No se puede crear mas tiradas. La partida ya esta acabada.");
 		}
 	}
 	
 	class SelectionHandler implements ListSelectionListener {
+		private String id;
+		
+		private String getId() {return id;}
+		private void setId(String id) {this.id = id;}
+		
 		public void valueChanged(ListSelectionEvent e) {
 			if (! e.getValueIsAdjusting()) {
 				ListSelectionModel lsm = (ListSelectionModel)e.getSource();
@@ -574,8 +687,8 @@ class JocFrame {
 					}
 				}
 			
-				String id = (String)tablePartidas.getModel().getValueAt(index, 0);
-				Partida partida = bd.cargarPartida(id);
+				setId((String)tablePartidas.getModel().getValueAt(index, 0));
+				Partida partida = bd.cargarPartida(getId());
 				Component[] componentList = panelTiradas.getComponents();
 				tableTiradas = new JTable();
 				scrollTableTiradas = new JScrollPane();
@@ -584,7 +697,14 @@ class JocFrame {
 				for (Component c: componentList) if (c instanceof JTable) panelTiradas.remove(c);
 				if (partida instanceof PartidaPrincipiante) new NuevaPartidaPrincipianteListener().cargaPartida((PartidaPrincipiante)partida);
 				if (partida instanceof PartidaAvanzada) new NuevaPartidaAvanzadaListener().cargaPartida((PartidaAvanzada)partida);
+				
+				
 			}
+		}
+	}
+	class AyudaListener implements ActionListener {
+		public void actionPerformed(ActionEvent ae) {
+			new AyudaFrame();
 		}
 	}
 	
@@ -610,6 +730,15 @@ class BD {
 	private String getPwd() {return this.PWD;}
 	private Partida getPartida() {return this.partida;}
 	public void setPartida(Partida partida) {this.partida = partida;}
+	
+	public static void mostraSQLException(SQLException ex) {
+		ex.printStackTrace(System.err);
+		System.err.println("SQLState:   " + ex.getSQLState());
+		System.err.println("Error Code: " + ex.getErrorCode());
+		System.err.println("Message:    " + ex.getMessage());
+		Throwable t;
+		while ((t = ex.getCause()) != null) System.out.println("Cause:      " + t);
+	}
 	
 	private Connection conectaBD(String driver, String url, String user, String pwd) throws ClassNotFoundException, SQLException {
 		Class.forName(driver);
@@ -643,10 +772,29 @@ class BD {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
-			Joc.mostraSQLException(e);
+			mostraSQLException(e);
 		} finally {
 			
 		} 
+	}
+	
+	public void borrarTodo() {
+		String deletePartidas = "delete from partidas", deleteTiradas = "delete from tiradas";
+		Connection con = null; Statement st = null;
+		try {
+			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
+			st.executeUpdate(deleteTiradas);
+			st.executeUpdate(deletePartidas);
+				
+			if (st != null) st.close();
+			if (con != null) con.close();
+		} catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		} catch (SQLException e) {
+			mostraSQLException(e);
+		} finally {
+			
+		}
 	}
 	
 	public Partida cargarPartida(String id) {
@@ -691,7 +839,7 @@ class BD {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
-			Joc.mostraSQLException(e);
+			mostraSQLException(e);
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		} finally {
@@ -701,22 +849,21 @@ class BD {
 	}
 	
 	public void guardaTirada(Tirada tirada) {
-		Partida partida = getPartida();
 		String insertTirada = 	"insert into tiradas (id_partida, numero_entrado, mal_posicionados, bien_posicionados) values" +
 								"(" + partida.getId() + ", '" + tirada.getEntradaString() + "', '" + tirada.getMalPosicionadosString() + "', '" + tirada.getBienPosicionadosString() + "')";
+		String updatePartida = 	"update mastermind.partidas set partida_acabada = " + partida.getPartidaAcabada() + " where partidas.id_partida = " + partida.getId();
 		Connection con = null; Statement st = null;						
 		try {
 			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
 			st.executeUpdate(insertTirada);
-			
-			System.out.println ("Se ha insertado la tirada: " + tirada);
+			st.executeUpdate(updatePartida);
 			
 			if (st != null) st.close();
 			if (con != null) con.close();
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
-			Joc.mostraSQLException(e);
+			mostraSQLException(e);
 		} finally {
 			
 		}
@@ -764,7 +911,7 @@ class BD {
 		} catch (ClassNotFoundException e) {
 			e.printStackTrace();
 		} catch (SQLException e) {
-			Joc.mostraSQLException(e);
+			mostraSQLException(e);
 		} finally {}
 		
 		return table;
@@ -773,21 +920,7 @@ class BD {
 }
 
 public class Joc {
-	private static Scanner in = new Scanner(System.in);
 	private JocFrame frame = new JocFrame();
-	
-	
-	
-	public static void mostraSQLException(SQLException ex) {
-		ex.printStackTrace(System.err);
-		System.err.println("SQLState:   " + ex.getSQLState());
-		System.err.println("Error Code: " + ex.getErrorCode());
-		System.err.println("Message:    " + ex.getMessage());
-		Throwable t;
-		while ((t = ex.getCause()) != null) System.out.println("Cause:      " + t);
-	}
-	
-	
 	
 	public static void main (String args[]) {
 		new Joc();
