@@ -407,7 +407,22 @@ class JocFrame {
 		
 		panelTiradas.setLayout(new BorderLayout());
 		
-		actualizaPanelPartidas();
+		panelPartidas = new JPanel();
+		panelPartidas.setLayout(new BorderLayout());
+		dmTablePartidas = bd.getTablaPartidas();
+		tablePartidas.setModel(dmTablePartidas);
+		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
+		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
+		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+		scrollTablePartidas = new JScrollPane(tablePartidas);
+		panelPartidas.add(scrollTablePartidas, BorderLayout.CENTER);
+		panelPartidasBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+		buttonBorrarTodo = new JButton("Borrar todo");
+		buttonBorrarTodo.setForeground(Color.white);
+		buttonBorrarTodo.setBackground(Color.red);
+		buttonBorrarTodo.addActionListener(new BorrarTodoListener());
+		panelPartidasBotones.add(buttonBorrarTodo);
+		panelPartidas.add(panelPartidasBotones, BorderLayout.SOUTH);
 		
 		Box boxPartida = Box.createHorizontalBox();
 		boxPartida.add(panelTiradas);
@@ -437,24 +452,7 @@ class JocFrame {
 	}
 	
 	public void actualizaPanelPartidas() {
-		Component[] componentList = panelTiradas.getComponents();
-		for (Component c: componentList) if (c instanceof Component) panelPartidas.remove(c);
-		panelPartidas = new JPanel();
-		panelPartidas.setLayout(new BorderLayout());
-		dmTablePartidas = bd.getTablaPartidas();
-		tablePartidas.setModel(dmTablePartidas);
-		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
-		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
-		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
-		scrollTablePartidas = new JScrollPane(tablePartidas);
-		panelPartidas.add(scrollTablePartidas, BorderLayout.CENTER);
-		panelPartidasBotones = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-		buttonBorrarTodo = new JButton("Borrar todo");
-		buttonBorrarTodo.setForeground(Color.white);
-		buttonBorrarTodo.setBackground(Color.red);
-		buttonBorrarTodo.addActionListener(new BorrarTodoListener());
-		panelPartidasBotones.add(buttonBorrarTodo);
-		panelPartidas.add(panelPartidasBotones, BorderLayout.SOUTH);
+		
 	}
 	public void actualizaPanelTiradas() {
 		
@@ -495,6 +493,7 @@ class JocFrame {
 		class SiListener extends ButtonListener {
 			public void actionPerformed(ActionEvent ae) {
 				bd.borrarTodo();
+				for (int i = dmTablePartidas.getRowCount() - 1; i >= 0; i--) dmTablePartidas.removeRow(i);
 				super.actionPerformed(ae);
 			}
 		}
@@ -515,8 +514,7 @@ class JocFrame {
 			panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
 			//actualizaPanelPartidas();
 		}
-		
-		public void actua() {
+		public void actionPerformed(ActionEvent ex) {
 			partida.crearNumeroAleatorio();
 			partida.setNick(itemTextFieldNick.getText());
 			try {
@@ -532,15 +530,10 @@ class JocFrame {
 				System.out.println("\nLa partida se ha guardado con exito.\n");
 			}
 		}
-		public void actionPerformed(ActionEvent ex) {
-			actua();
-		}
 	}
 	class NuevaPartidaPrincipianteListener extends NuevaPartidaListener {
 		public void cargaPartida(PartidaPrincipiante p) {
 			labelTitulo.setText("CONTINUAR PARTIDA PRINCIPIANTE");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
 			tableTiradas.setModel(dmTableTiradas);
 			scrollTableTiradas = new JScrollPane(tableTiradas);
 			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
@@ -551,16 +544,7 @@ class JocFrame {
 			}
 			partida = p;
 			bd.setPartida(partida);
-			super.addComponents();
-		}
-		public void actua(PartidaPrincipiante p) {
-			partida = p;
-			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
-			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
-			tableTiradas.setModel(dmTableTiradas);
-			super.actua();
+			if (panelTiradas.getComponents().length == 0) super.addComponents();
 		}
 		public void actionPerformed(ActionEvent e) {
 			partida = new PartidaPrincipiante();
@@ -570,14 +554,12 @@ class JocFrame {
 			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
 			tableTiradas.setModel(dmTableTiradas);
 			super.actionPerformed(e);
-			super.addComponents();
+			if (panelTiradas.getComponents().length == 0) super.addComponents();
 		}
 	}
 	class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
 		public void cargaPartida(PartidaAvanzada p) {
 			labelTitulo.setText("CONTINUAR PARTIDA AVANZADA");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
 			tableTiradas.setModel(dmTableTiradas);
 			scrollTableTiradas = new JScrollPane(tableTiradas);
 			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
@@ -588,16 +570,7 @@ class JocFrame {
 			}
 			partida = p;
 			bd.setPartida(partida);
-			super.addComponents();
-		}
-		public void actua(PartidaAvanzada p) {
-			partida = p;
-			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
-			tableTiradas = new JTable();
-			dmTableTiradas = new DefaultTableModel();
-			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas"); 
-			tableTiradas.setModel(dmTableTiradas);
-			super.actua();
+			if (panelTiradas.getComponents().length == 0) super.addComponents();
 		}
 		public void actionPerformed(ActionEvent e) {
 			partida = new PartidaAvanzada();
@@ -607,7 +580,7 @@ class JocFrame {
 			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas"); 
 			tableTiradas.setModel(dmTableTiradas);
 			super.actionPerformed(e);
-			super.addComponents();
+			if (panelTiradas.getComponents().length == 0) super.addComponents();
 		}
 	}
 
@@ -692,11 +665,10 @@ class JocFrame {
 					}
 				}
 			
-				setId((String)dmTablePartidas.getValueAt(index, 0));
+				setId(""+dmTablePartidas.getValueAt(index, 0));
 				Partida partida = bd.cargarPartida(getId());
 				Component[] componentList = panelTiradas.getComponents();
 				tableTiradas = new JTable();
-				scrollTableTiradas = new JScrollPane();
 				dmTableTiradas = new DefaultTableModel();
 				for (Component c: componentList) if (c instanceof JScrollPane) panelTiradas.remove(c);
 				for (Component c: componentList) if (c instanceof JTable) panelTiradas.remove(c);
@@ -825,12 +797,9 @@ class BD {
 				
 			rs = st.executeQuery(selectPartida);
 			rs.next(); 
-			if (rs.getInt(5) == 0) {
+			if (rs.getInt(5) == 0)
 				partida = new PartidaPrincipiante(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
-				
-				
-				
-			} else {
+			else {
 				int vidas = rs.getInt(5), cantTiradas = 0;
 				partida = new PartidaAvanzada(rs.getInt(1),  rs.getString(2), rs.getString(3), rs.getString(4), rs.getByte(5), rs.getBoolean(6), tiradas);
 				rs = st.executeQuery(selectCantTiradas); rs.next();
