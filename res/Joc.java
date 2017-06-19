@@ -520,7 +520,7 @@ class JocFrame {
 			partida.setNick(itemTextFieldNick.getText());
 			try {
 				bd.guardaPartida(getPartida());
-				dmTablePartidas
+				//dmTablePartidas
 			} catch (Exception e) {
 				System.out.println("ERROR No se ha podido guardar la partida.");
 			} finally {
