@@ -533,20 +533,25 @@ class JocFrame {
 	}
 	class NuevaPartidaPrincipianteListener extends NuevaPartidaListener {
 		public void cargaPartida(PartidaPrincipiante p) {
+			Component[] componentList = panelTiradas.getComponents(); for (Component c: componentList) if (c instanceof JComponent) panelTiradas.remove(c);
 			labelTitulo.setText("CONTINUAR PARTIDA PRINCIPIANTE");
-			tableTiradas.setModel(dmTableTiradas);
+			dmTableTiradas = new DefaultTableModel();
 			scrollTableTiradas = new JScrollPane(tableTiradas);
+			panelTiradas.remove(scrollTableTiradas);
 			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
 			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos.");
 			for(Iterator it = p.getTiradas().iterator(); it.hasNext();) {
 				Tirada t = (Tirada)it.next();
 				dmTableTiradas.addRow(new Object[]{t.getEntradaString(), t.getBienPosicionadosString(), t.getMalPosicionadosString()});
 			}
+			tableTiradas.setModel(dmTableTiradas);
 			partida = p;
 			bd.setPartida(partida);
-			if (panelTiradas.getComponents().length == 0) super.addComponents();
+			//super.addComponents();
 		}
 		public void actionPerformed(ActionEvent e) {
+			Component[] componentList = panelTiradas.getComponents(); for (Component c: componentList) if (c instanceof JComponent) panelTiradas.remove(c);
 			partida = new PartidaPrincipiante();
 			labelTitulo.setText("NUEVA PARTIDA PRINCIPIANTE");
 			tableTiradas = new JTable();
@@ -559,20 +564,25 @@ class JocFrame {
 	}
 	class NuevaPartidaAvanzadaListener extends NuevaPartidaListener  {
 		public void cargaPartida(PartidaAvanzada p) {
+			Component[] componentList = panelTiradas.getComponents(); for (Component c: componentList) if (c instanceof JComponent) panelTiradas.remove(c);
 			labelTitulo.setText("CONTINUAR PARTIDA AVANZADA");
-			tableTiradas.setModel(dmTableTiradas);
+			dmTableTiradas = new DefaultTableModel();
 			scrollTableTiradas = new JScrollPane(tableTiradas);
+			panelTiradas.remove(scrollTableTiradas);
 			panelTiradas.add(scrollTableTiradas, BorderLayout.CENTER);
+			panelTiradas.add(panelEntrada, BorderLayout.SOUTH);
 			dmTableTiradas.addColumn("Entrada"); dmTableTiradas.addColumn("Bien pos."); dmTableTiradas.addColumn("Mal pos."); dmTableTiradas.addColumn("Vidas");
 			for(Iterator it = p.getTiradas().iterator(); it.hasNext();) {
 				Tirada t = (Tirada)it.next();
 				dmTableTiradas.addRow(new Object[]{t.getEntradaString(), t.getCantidadBienPosicionados(), t.getCantidadMalPosicionados(), ((PartidaAvanzada)p).getCantidadVidas()});
 			}
+			tableTiradas.setModel(dmTableTiradas);
 			partida = p;
 			bd.setPartida(partida);
-			if (panelTiradas.getComponents().length == 0) super.addComponents();
+			//super.addComponents();
 		}
 		public void actionPerformed(ActionEvent e) {
+			Component[] componentList = panelTiradas.getComponents(); for (Component c: componentList) if (c instanceof JComponent) panelTiradas.remove(c);
 			partida = new PartidaAvanzada();
 			labelTitulo.setText("NUEVA PARTIDA AVANZADA");
 			tableTiradas = new JTable();
@@ -667,15 +677,12 @@ class JocFrame {
 			
 				setId(""+dmTablePartidas.getValueAt(index, 0));
 				Partida partida = bd.cargarPartida(getId());
-				Component[] componentList = panelTiradas.getComponents();
 				tableTiradas = new JTable();
 				dmTableTiradas = new DefaultTableModel();
-				for (Component c: componentList) if (c instanceof JScrollPane) panelTiradas.remove(c);
-				for (Component c: componentList) if (c instanceof JTable) panelTiradas.remove(c);
+				//for (Component c: componentList) if (c instanceof JTable) panelTiradas.remove(c);
 				if (partida instanceof PartidaPrincipiante) new NuevaPartidaPrincipianteListener().cargaPartida((PartidaPrincipiante)partida);
 				if (partida instanceof PartidaAvanzada) new NuevaPartidaAvanzadaListener().cargaPartida((PartidaAvanzada)partida);
-				
-				
+				//tablePartidas.getSelectionModel().clearSelection();				
 			}
 		}
 	}
@@ -807,7 +814,7 @@ class BD {
 				((PartidaAvanzada)partida).setCantidadVidas((byte)(vidas - cantTiradas));
 			}
 				
-			System.out.println (partida);	
+			System.out.println ("CARGAR" + partida);	
 				
 			if (st != null) st.close(); if (con != null) con.close();
 		} catch (ClassNotFoundException e) {
