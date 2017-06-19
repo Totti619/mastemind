@@ -368,7 +368,7 @@ class JocFrame {
 	
 	private JPanel panelTiradas = new JPanel();
 	private JTable tableTiradas;
-	private DefaultTableModel dmTableTiradas;
+	public DefaultTableModel dmTableTiradas, dmTablePartidas;
 	private JScrollPane scrollTableTiradas = new JScrollPane(tableTiradas);
 	private JTextField textFieldEntrada = new JTextField();
 	private JButton buttonEntrada = new JButton("Entrar");
@@ -376,7 +376,7 @@ class JocFrame {
 	
 	private JPanel panelPartidas;
 	private JLabel labelPartidasGuardadas = new JLabel("Partidas Guardadas");
-	private JTable tablePartidas;
+	private JTable tablePartidas = new JTable();
 	private ListSelectionModel tablePartidasSelectionModel;
 	private JScrollPane scrollTablePartidas;
 	private JPanel panelPartidasBotones;
@@ -441,7 +441,8 @@ class JocFrame {
 		for (Component c: componentList) if (c instanceof Component) panelPartidas.remove(c);
 		panelPartidas = new JPanel();
 		panelPartidas.setLayout(new BorderLayout());
-		tablePartidas = bd.getTablaPartidas();
+		dmTablePartidas = bd.getTablaPartidas();
+		tablePartidas.setModel(dmTablePartidas);
 		tablePartidasSelectionModel = tablePartidas.getSelectionModel();
 		tablePartidasSelectionModel.addListSelectionListener(new SelectionHandler());
 		tablePartidas.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -520,9 +521,13 @@ class JocFrame {
 			partida.setNick(itemTextFieldNick.getText());
 			try {
 				bd.guardaPartida(getPartida());
-				//dmTablePartidas
+				String tipoPartida = "";
+				if (partida instanceof PartidaAvanzada) tipoPartida = "Avanzada";
+				if (partida instanceof PartidaPrincipiante) tipoPartida = "Principiante";
+				dmTablePartidas.addRow(new Object[]{partida.getId(), partida.getNick(), partida.getFecha(), tipoPartida, partida.getVidas(), "NO"});
 			} catch (Exception e) {
-				System.out.println("ERROR No se ha podido guardar la partida.");
+				//System.out.println("ERROR No se ha podido guardar la partida.");
+				e.printStackTrace();
 			} finally {
 				System.out.println("\nLa partida se ha guardado con exito.\n");
 			}
@@ -687,7 +692,7 @@ class JocFrame {
 					}
 				}
 			
-				setId((String)tablePartidas.getModel().getValueAt(index, 0));
+				setId((String)dmTablePartidas.getValueAt(index, 0));
 				Partida partida = bd.cargarPartida(getId());
 				Component[] componentList = panelTiradas.getComponents();
 				tableTiradas = new JTable();
@@ -869,14 +874,14 @@ class BD {
 		}
 	}
 	
-	public JTable getTablaPartidas() {
+	public DefaultTableModel getTablaPartidas() {
 		String querySelect ="select partidas.id_partida, partidas.nick, partidas.fecha, partidas.cantidad_maxima_tiradas, partidas.partida_acabada " +
 							"from mastermind.partidas ";
 		
 		Connection con = null;
 		Statement st = null;
 		ResultSet rs = null;
-		JTable table = null;
+		DefaultTableModel table = null;
 		try {
 			
 			st = (con = conectaBD(getDriver(), getUrl(), getUser(), getPwd())).createStatement();
@@ -903,7 +908,8 @@ class BD {
 				rowData.add(row);
 			}
 			
-			table = new JTable(rowData, columnNames);
+			
+			table = new DefaultTableModel(rowData, columnNames);
 			
 			if (st != null) st.close();
 			if (con != null) con.close();
