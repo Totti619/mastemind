@@ -333,7 +333,7 @@ class AyudaFrame {
 			contenido = getFileContentFromPath(path);
 			textArea.setText(contenido);
 		} catch (FileNotFoundException e) {
-			System.out.println ("No se ha encontrado el archivo " + path);
+			System.err.println ("No se ha encontrado el archivo " + path);
 		} catch (IOException e) {
 			e.printStackTrace();
 		} 
@@ -389,6 +389,9 @@ class JocFrame {
 	public JocFrame() {
 		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
 		frame.setSize(950, 550);
+		
+		//tablePartidas.setEnabled(false);
+	//	tableTiradas.setEnabled(false);
 		
 		menuBar.add(menuNuevaPartida);
 		menuNuevaPartida.add(itemNuevaPartidaPrincipiante);
@@ -527,7 +530,7 @@ class JocFrame {
 				//System.out.println("ERROR No se ha podido guardar la partida.");
 				e.printStackTrace();
 			} finally {
-				System.out.println("\nLa partida se ha guardado con exito.\n");
+				//System.out.println("\nLa partida se ha guardado con exito.\n");
 			}
 		}
 	}
@@ -607,7 +610,7 @@ class JocFrame {
 		
 		public void actionPerformed(ActionEvent ae) {
 			bd.setPartida(partida);
-			System.out.println (partida.getPartidaAcabada());
+			//System.out.println (partida.getPartidaAcabada());
 			
 			
 			if (!partida.getPartidaAcabada()) {
@@ -636,9 +639,9 @@ class JocFrame {
 					if (getPartida().getPartidaAcabada()) System.out.println("\nPARTIDA ACABADA");
 					
 				} catch (NumberFormatException e) {
-					System.out.println ("El valor no es correcto.");
+					System.err.println ("El valor no es correcto.");
 				}
-			} else System.out.println ("No se puede crear mas tiradas. La partida ya esta acabada.");
+			} else System.err.println ("No se puede crear mas tiradas. La partida ya esta acabada.");
 		}
 	}
 	
@@ -721,7 +724,7 @@ class BD {
 		System.err.println("Error Code: " + ex.getErrorCode());
 		System.err.println("Message:    " + ex.getMessage());
 		Throwable t;
-		while ((t = ex.getCause()) != null) System.out.println("Cause:      " + t);
+		while ((t = ex.getCause()) != null) System.err.println("Cause:      " + t);
 	}
 	
 	private Connection conectaBD(String driver, String url, String user, String pwd) throws ClassNotFoundException, SQLException {
@@ -814,7 +817,7 @@ class BD {
 				((PartidaAvanzada)partida).setCantidadVidas((byte)(vidas - cantTiradas));
 			}
 				
-			System.out.println ("CARGAR" + partida);	
+			//System.out.println ("CARGAR" + partida);	
 				
 			if (st != null) st.close(); if (con != null) con.close();
 		} catch (ClassNotFoundException e) {
